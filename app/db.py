@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import pandas as pd
 from pymongo import MongoClient
@@ -30,12 +31,12 @@ def setup_database(limit: int | None = None) -> Database:
     if db.books.count_documents({}) == 0:
         print(f"Populating database with books from CSV file: {csv_path} ...")
         df = pd.read_csv(csv_path)
-        populate_db_from_df(df, db, limit)
+        _populate_db_from_df(df, db, limit)
 
     print("Database setup complete.\n")
     return db
 
-def populate_db_from_df(df: pd.DataFrame, db: Database, limit: int | None = None) -> None:
+def _populate_db_from_df(df: pd.DataFrame, db: Database, limit: int | None = None) -> None:
     """
     Populates the MongoDB database with book documents from a pandas DataFrame.
     This function processes the DataFrame by parsing complex columns, transforming author information,
@@ -85,3 +86,54 @@ def populate_db_from_df(df: pd.DataFrame, db: Database, limit: int | None = None
         print(f"Database populated with {len(books)} books.")
     else:
         print("No books found for populating the database.")
+
+
+def get_books_by_author(db: Database, author: str):
+    """
+    Retrieve English-language books from the database written by a specified author.
+    Args:
+        db (Database): The MongoDB database connection object.
+        author (str): The name of the author to filter books by.
+    Raises:
+        ValueError: If the author name is not provided or is empty.
+    Returns:
+        pymongo.cursor.Cursor: A cursor to the sorted list of books matching the author and language criteria.
+    """
+    if author is None or author.strip() == "":
+        raise ValueError("Author name must be provided and cannot be empty.")
+    
+    return db.books.find({"authors": author, "language": "English"}).sort("publishDate")
+
+def get_top_rated_books_by_genre(db: Database, genre: str, limit: int = 10):
+    """
+    Retrieves the top-rated books for a specified genre from the database.
+    Args:
+        db (Database): The database connection object.
+        genre (str): The genre to filter books by. Must be a non-empty string.
+        limit (int, optional): The maximum number of books to return. Defaults to 10.
+    Raises:
+        ValueError: If the genre is None or an empty string.
+    Returns:
+        pymongo.cursor.Cursor: A cursor to the list of books sorted by rating in descending order.
+    """
+    if genre is None or genre.strip() == "":
+        raise ValueError("Genre must be provided and cannot be empty.")
+
+    return db.books.find({"genres": genre}).sort("rating", -1).limit(limit)
+
+def get_top_rated_books_by_year(db: Database, year: int, limit: int = 10):
+    """
+    Retrieves the top-rated books published in a specific year from the database.
+    Args:
+        db (Database): The database connection object.
+        year (int): The year to filter books by their publish date.
+        limit (int, optional): The maximum number of books to return. Defaults to 10.
+    Raises:
+        ValueError: If the year is not provided or is None.
+    Returns:
+        pymongo.cursor.Cursor: A cursor to the list of top-rated books published in the specified year, sorted by rating in descending order.
+    """
+    if year is None:
+        raise ValueError("Year must be provided and cannot be empty.")
+
+    return db.books.find({"publishDate": {"$eq": datetime(year, 1, 1)}}).sort("rating", -1).limit(limit)
