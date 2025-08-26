@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from dateutil import parser
 
+
 def parse_dict(value):
     """
     Converts a string representation of a dictionary into a Python dictionary object.
@@ -25,6 +26,7 @@ def parse_dict(value):
         except (ValueError, SyntaxError):
             return value
     return value
+
 
 def parse_list(value: str) -> list[str]:
     """
