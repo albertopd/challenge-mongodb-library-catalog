@@ -1,5 +1,4 @@
 import ast
-import math
 import re
 import pandas as pd
 from dateutil import parser
@@ -73,26 +72,3 @@ def parse_year(value) -> int | None:
         return parser.parse(strvalue, fuzzy=True).year
     except (ValueError, OverflowError, TypeError):
         return None
-
-
-def get_total_chunks(csv_path, chunksize):
-    """
-    Calculates the total number of chunks required to process a CSV file in batches.
-
-    Args:
-        csv_path (str): The file path to the CSV file.
-        chunksize (int): The number of rows per chunk.
-
-    Returns:
-        int: The total number of chunks needed to process the file. Returns 0 if an error occurs.
-
-    Notes:
-        Assumes the first row of the CSV file is a header and excludes it from the row count.
-    """
-    try:
-        with open(csv_path, "rb") as f:
-            total_rows = sum(1 for _ in f) - 1  # subtract header row
-        return math.ceil(total_rows / chunksize)
-    except Exception as e:
-        print(f"Error occurred while getting total chunks: {e}")
-        return 0

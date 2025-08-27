@@ -1,6 +1,6 @@
 import os
-from app.library_catalog import MongoDbLibraryCatalog
 from dotenv import load_dotenv
+from app.db.library_catalog import MongoDbLibraryCatalog
 
 
 def main():
