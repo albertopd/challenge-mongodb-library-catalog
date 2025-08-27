@@ -1,18 +1,21 @@
 # Challenge: MongoDB Library Catalog
 
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/) [![MongoDB](https://img.shields.io/badge/MongoDB-8.0-green.svg)](https://www.mongodb.com/)
 
 This project is a MongoDB-powered library catalog system built with Python. It allows you to import, store, and query a large dataset of books, supporting advanced search and analytics features such as top-rated books, genre and author statistics, and dynamic updates.
 
 ## ✨ Features
 
-- Import books from CSV files into MongoDB in efficient chunks.
-- Query books by author, genre, or publication year.
-- Retrieve top-rated books by genre or year.
-- Get statistics for genres and authors (top 10, etc.).
-- Add, update, and delete book records.
-- Calculate ratings and liked percentages dynamically.
-- Context manager support for safe database connections.
+- **Bulk Import:** Efficiently load large CSV datasets into MongoDB in chunks, with automatic data cleaning and transformation.
+- **Flexible Search:** Query books by author, genre, publication year, or custom criteria.
+- **Top-Rated Analytics:** Instantly retrieve top-rated books by genre or year, with dynamic rating calculations.
+- **Genre & Author Stats:** Get top genres and authors by book count, with easy aggregation and sorting.
+- **CRUD Operations:** Add, update, and delete book records with full support for MongoDB ObjectId.
+- **Dynamic Ratings:** Calculate and update ratings, liked percentages, and star breakdowns in real time.
+- **Safe Connections:** Use context manager support for automatic, safe database connection handling.
+- **Configurable:** Easily adjust database and dataset settings via environment variables or `.env` file.
+- **Extensible:** Modular codebase for adding new features, analytics, or data sources.
 
 ## 📂 Project Structure
 

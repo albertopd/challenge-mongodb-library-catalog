@@ -76,6 +76,19 @@ def parse_year(value) -> int | None:
 
 
 def get_total_chunks(csv_path, chunksize):
+    """
+    Calculates the total number of chunks required to process a CSV file in batches.
+
+    Args:
+        csv_path (str): The file path to the CSV file.
+        chunksize (int): The number of rows per chunk.
+
+    Returns:
+        int: The total number of chunks needed to process the file. Returns 0 if an error occurs.
+
+    Notes:
+        Assumes the first row of the CSV file is a header and excludes it from the row count.
+    """
     try:
         with open(csv_path, "rb") as f:
             total_rows = sum(1 for _ in f) - 1  # subtract header row

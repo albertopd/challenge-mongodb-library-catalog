@@ -4,6 +4,20 @@ from dotenv import load_dotenv
 
 
 def main():
+    """
+    Main entry point for setting up and interacting with the MongoDB library catalog.
+    - Loads environment variables for MongoDB connection and CSV dataset path.
+    - Initializes the MongoDbLibraryCatalog and populates it from a CSV file if empty.
+    - Demonstrates catalog queries:
+        - Finds books by a specific author.
+        - Retrieves top 10 rated books by genre and by publication year.
+        - Lists top 10 genres and authors by number of books.
+    - Shows CRUD operations:
+        - Inserts a new book and retrieves it.
+        - Deletes the newly inserted book.
+        - Adds a 5-star rating to an existing book and displays updated ratings.
+    - Handles exceptions and prints error messages.
+    """
     try:
         load_dotenv()
 
@@ -17,9 +31,6 @@ def main():
         with MongoDbLibraryCatalog(
             host=db_host, port=db_port, db_name=db_name
         ) as catalog:
-            
-            catalog._db.books.delete_many({})
-            
             # If catalog is empty, populate it with books from CSV dataset
             if catalog.is_empty():
                 print(f"Populating catalog with books from CSV file: {csv_path} ...")
@@ -43,14 +54,18 @@ def main():
             top_rated_books_by_genre = catalog.get_top_rated_books_by_genre(genre, 10)
             print(f"\nTop 10 rated books in the {genre} genre:")
             for book in top_rated_books_by_genre:
-                print(f"- \"{book['title']}\" by {', '.join(book['authors'])} : {book['rating']}")
+                print(
+                    f"- \"{book['title']}\" by {', '.join(book['authors'])} : {book['rating']}"
+                )
 
             # Find top 10 rated books published on an specific year
             year = 2000
             top_rated_books_by_year = catalog.get_top_rated_books_by_year(year, 10)
             print(f"\nTop 10 rated books published on {year}:")
             for book in top_rated_books_by_year:
-                print(f"- \"{book['title']}\" by {', '.join(book['authors'])} : {book['rating']}")
+                print(
+                    f"- \"{book['title']}\" by {', '.join(book['authors'])} : {book['rating']}"
+                )
 
             # Top 10 genres by number of books
             print("\nTop 10 genres by number of books:")
@@ -90,14 +105,24 @@ def main():
                 print(f"\nFound book: {book['title']}")
 
                 def print_ratings(book):
-                    print(f"- Total ratings: {0 if not book.get('numRatings') else book['numRatings']}")
-                    ratingsByStars = [0, 0, 0, 0, 0] if book.get('ratingsByStars') is None else book['ratingsByStars']
+                    print(
+                        f"- Total ratings: {0 if not book.get('numRatings') else book['numRatings']}"
+                    )
+                    ratingsByStars = (
+                        [0, 0, 0, 0, 0]
+                        if book.get("ratingsByStars") is None
+                        else book["ratingsByStars"]
+                    )
                     print(f"- Ratings by stars:")
                     for i, count in enumerate(ratingsByStars):
-                        stars = '*' * (5 - i)
+                        stars = "*" * (5 - i)
                         print(f"  {stars:<5} : {count}")
-                    print(f"- Average rating: {0 if not book.get('rating') else book['rating']}")
-                    print(f"- Liked percentage: {0 if not book.get('likedPercent') else book['likedPercent']}%")
+                    print(
+                        f"- Average rating: {0 if not book.get('rating') else book['rating']}"
+                    )
+                    print(
+                        f"- Liked percentage: {0 if not book.get('likedPercent') else book['likedPercent']}%"
+                    )
 
                 print_ratings(book)
 
