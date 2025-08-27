@@ -21,16 +21,26 @@ This project is a MongoDB-powered library catalog system built with Python. It a
 
 ```
 challenge-mongodb-library-catalog/
-├── app/
-│   ├── library_catalog.py  # Main catalog logic
-│   ├── main.py             # CLI entry point
-│   ├── utils.py            # Data parsing helpers
-├── data/
-│   ├── books.csv           # Example dataset
-│   └── README.md
-├── requirements.txt        # Python dependencies
-├── LICENSE
-└── README.md
+├── app/                            # Application source code
+│   ├── db/                         # Database logic and catalog operations
+│   │   └── library_catalog.py      # MongoDB catalog implementation
+│   │
+│   ├── utils/                      # Utilities and helpers
+│   │   └── parse_helpers.py        # Data parsing helpers
+│   │
+│   ├── pipelines/                  # Data transformation and ETL pipelines
+│   │    └── transform.py           # Data transformation logic
+│   │
+│   └── main.py                     # CLI entry point and usage logic
+|
+├── data/                           # Directory for datasets
+│   ├── books.csv                   # CSV file containing books dataset (must be downloaded manually)
+│   └── README.md                   # Documentation about how to download the CSV file
+│
+├── .env                            # Local environment variables
+├── LICENSE                         # License information
+├── README.md                       # Project documentation
+└── requirements.txt                # Python dependencies
 ```
 
 ## 📋 Requirements
