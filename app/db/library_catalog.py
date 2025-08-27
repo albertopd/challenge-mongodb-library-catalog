@@ -67,7 +67,7 @@ class MongoDbLibraryCatalog:
         """
         return self.count_books() == 0
 
-    def _get_total_chunks(
+    def __get_total_chunks(
         self, 
         csv_path: str, 
         chunksize: int
@@ -108,7 +108,7 @@ class MongoDbLibraryCatalog:
         Returns:
             int: Total number of inserted documents.
         """
-        total_chunks = self._get_total_chunks(csv_path, chunksize)
+        total_chunks = self.__get_total_chunks(csv_path, chunksize)
         total_inserted = 0
 
         reader = pd.read_csv(csv_path, chunksize=chunksize)
@@ -133,11 +133,11 @@ class MongoDbLibraryCatalog:
                 total_inserted += len(books)
 
         if total_inserted > 0:
-            self._setup_indexes()
+            self.__setup_indexes()
 
         return total_inserted
 
-    def _setup_indexes(self):
+    def __setup_indexes(self):
         """
         Set up indexes for the books collection to improve query performance.
         """
