@@ -1,9 +1,8 @@
-from bson import ObjectId
 import pandas as pd
-from datetime import datetime
+from bson import ObjectId
 from pymongo import MongoClient, ReturnDocument
 from pymongo.cursor import Cursor
-from app.utils import parse_dict, parse_list, parse_date
+from app.utils import get_total_chunks, parse_year, parse_dict, parse_list
 
 
 class MongoDbLibraryCatalog:
@@ -82,10 +81,27 @@ class MongoDbLibraryCatalog:
         Returns:
             int: Total number of inserted documents.
         """
+        total_chunks = get_total_chunks(csv_path, chunksize)
         total_inserted = 0
+
         reader = pd.read_csv(csv_path, chunksize=chunksize)
 
-        for chunk in reader:
+        for i, chunk in enumerate(reader):
+            print(
+                f"Processing chunk {i + 1} out of {total_chunks} : {chunk.shape[0]} rows"
+            )
+
+            # Drop unnecessary columns
+            drop_cols = [
+                "bookId",
+                "firstPublishDate",
+                "coverImg",
+                "bbeScore",
+                "bbeVotes",
+                "price",
+            ]
+            chunk = chunk.drop(columns=[c for c in drop_cols if c in chunk.columns])
+
             # Respect the limit if provided
             if limit is not None:
                 remaining = limit - total_inserted
@@ -129,54 +145,37 @@ class MongoDbLibraryCatalog:
                 )
                 chunk.drop(columns=["author"], inplace=True)
 
-            # Drop unnecessary columns
-            drop_cols = [
-                "bookId",
-                "firstPublishDate",
-                "coverImg",
-                "bbeScore",
-                "bbeVotes",
-                "price",
-            ]
-            chunk = chunk.drop(columns=[c for c in drop_cols if c in chunk.columns])
-
             # Transform publishDate and ensure only Python datetime or None
             if "publishDate" in chunk.columns:
-                chunk["publishDate"] = chunk["publishDate"].apply(parse_date)
+                chunk["publishYear"] = (
+                    chunk["publishDate"].apply(parse_year).astype("Int64")
+                )
 
-            # Convert to list of dicts (faster than iterrows)
             books = chunk.to_dict(orient="records")
-
-            # Aggressive sanitization: remove any non-datetime, pd.NaT, pd.Timestamp, numpy.datetime64
-            import numpy as np
-
-            for book in books:
-                if "publishDate" in book:
-                    val = book["publishDate"]
-                    if val is None or isinstance(val, datetime):
-                        continue
-                    # Remove pandas NaT
-                    if (hasattr(pd, "NaT") and val is pd.NaT) or str(
-                        type(val)
-                    ).endswith("NaTType'>"):
-                        book["publishDate"] = None
-                        continue
-                    # Remove pd.Timestamp
-                    if isinstance(val, pd.Timestamp):
-                        book["publishDate"] = None
-                        continue
-                    # Remove numpy.datetime64
-                    if isinstance(val, np.datetime64):
-                        book["publishDate"] = None
-                        continue
-                    # Remove anything else
-                    book["publishDate"] = None
 
             if books:
                 self._db.books.insert_many(books)
                 total_inserted += len(books)
 
+        if total_inserted > 0:
+            self._setup_indexes()
+
         return total_inserted
+
+    def _setup_indexes(self):
+        """
+        Set up indexes for the books collection to improve query performance.
+        """
+        # Multikey indexes 
+        self._db.books.create_index("authors")
+        self._db.books.create_index("genres")
+
+        # Single key indexes
+        self._db.books.create_index("publishYear")
+
+        # Compound for common queries
+        self._db.books.create_index([("authors", 1), ("publishYear", 1)])
+        self._db.books.create_index([("genres", 1), ("publishYear", 1)])
 
     def get_book(self, query: dict) -> dict | None:
         """
@@ -194,7 +193,10 @@ class MongoDbLibraryCatalog:
         return self._db.books.find_one(query)
 
     def get_books_by_author(
-        self, author: str, language: str | None = "English", limit: int | None = None
+        self, 
+        author: str, 
+        language: str | None = "English", 
+        limit: int | None = None
     ) -> Cursor:
         """
         Retrieve books written by a specified author.
@@ -219,7 +221,11 @@ class MongoDbLibraryCatalog:
 
         return cursor
 
-    def get_rated_books_by_genre(self, genre: str, limit: int | None = None) -> Cursor:
+    def get_top_rated_books_by_genre(
+        self, 
+        genre: str, 
+        limit: int | None = None
+    ) -> Cursor:
         """
         Retrieve top-rated books for a specified genre.
         Args:
@@ -240,7 +246,11 @@ class MongoDbLibraryCatalog:
 
         return cursor
 
-    def get_rated_books_by_year(self, year: int, limit: int | None = None) -> Cursor:
+    def get_top_rated_books_by_year(
+        self, 
+        year: int, 
+        limit: int | None = None
+    ) -> Cursor:
         """
         Retrieve top-rated books published in a specific year.
         Args:
@@ -254,9 +264,7 @@ class MongoDbLibraryCatalog:
         if year is None:
             raise ValueError("Year must be provided and cannot be empty.")
 
-        cursor = self._db.books.find(
-            {"publishDate": {"$eq": datetime(year, 1, 1)}}
-        ).sort("rating", -1)
+        cursor = self._db.books.find({"publishYear": {"$eq": year}}).sort("rating", -1)
 
         if limit:
             cursor = cursor.limit(limit)
@@ -317,7 +325,10 @@ class MongoDbLibraryCatalog:
         return str(result.inserted_id)
 
     def update_book(
-        self, book_id: str, updates: dict, upsert: bool = False
+        self, 
+        book_id: str, 
+        updates: dict, 
+        upsert: bool = False
     ) -> dict | None:
         """
         Update a book document in the database with the specified fields.
@@ -341,7 +352,26 @@ class MongoDbLibraryCatalog:
         )
         return updated_doc
 
-    def rate_book(self, book_id: str, stars: int) -> dict | None:
+    def rate_book(
+        self, 
+        book_id: str, 
+        stars: int
+    ) -> dict | None:
+        """
+        Rates a book by its ID with a given number of stars (1 to 5).
+        Updates the book's rating statistics, including:
+            - ratingsByStars: List of counts for each star rating (5 to 1).
+            - numRatings: Total number of ratings.
+            - rating: Average rating, rounded to 2 decimal places.
+            - likedPercent: Percentage of ratings that are 3 stars or higher.
+        Args:
+            book_id (str): The unique identifier of the book to rate.
+            stars (int): The number of stars to rate the book (must be between 1 and 5).
+        Returns:
+            dict | None: The updated book data if the book exists, otherwise None.
+        Raises:
+            ValueError: If the stars value is not between 1 and 5.
+        """
         if stars < 1 or stars > 5:
             raise ValueError("Rating stars must be between 1 and 5.")
 
@@ -362,15 +392,12 @@ class MongoDbLibraryCatalog:
 
         # Calculate average rating
         averageRating = round(
-            sum((5 - i) * count for i, count in enumerate(ratingsByStars))
-            / numRatings,
-            2
+            sum((5 - i) * count for i, count in enumerate(ratingsByStars)) / numRatings,
+            2,
         )
 
         # Calculate liked percentage
-        likedPercent = int(
-            round(sum(ratingsByStars[0:3]) / numRatings * 100, 0)
-        )
+        likedPercent = int(round(sum(ratingsByStars[0:3]) / numRatings * 100, 0))
 
         # Update book ratings
         updated_data = {

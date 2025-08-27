@@ -1,6 +1,7 @@
 import ast
+import math
+import re
 import pandas as pd
-from datetime import datetime
 from dateutil import parser
 
 
@@ -43,28 +44,42 @@ def parse_list(value: str) -> list[str]:
         return [item.strip() for item in value.split(",") if item.strip()]
     return []
 
-def parse_date(value) -> datetime | None:
+
+def parse_year(value) -> int | None:
     """
-    Converts a value representing a date in mixed formats to a `datetime.datetime` object.
-
-    Parameters:
-        value: The input value to be parsed. Can be a string, `datetime`, `pandas.Timestamp`, or other types.
-
+    Parses a value and attempts to extract a 4-digit year.
+    Args:
+        value: The input value to parse, which can be a string, number, or other type.
     Returns:
-        datetime | None: A `datetime.datetime` object if parsing is successful, or `None` if the value is invalid or cannot be parsed.
-
+        int | None: The extracted year as an integer if successful, otherwise None.
     Notes:
-        - Handles `NaN` values by returning `None`.
-        - Accepts `datetime` and `pandas.Timestamp` objects directly.
-        - Attempts to parse strings and other types using dateutil's parser with fuzzy matching.
+        - Returns None if the value is NaN, empty, or cannot be parsed as a year.
+        - Tries to match a 4-digit year directly for efficiency.
+        - Falls back to fuzzy date parsing if direct match fails.
     """
-    """Convert mixed date formats to datetime.datetime, or None if invalid."""
     if pd.isna(value):
         return None
-    if isinstance(value, (datetime, pd.Timestamp)):
-        return value if isinstance(value, datetime) else value.to_pydatetime()
-    try:
-        dt = parser.parse(str(value), fuzzy=True)
-        return dt
-    except Exception:
+    
+    strvalue = str(value).strip()
+    if not strvalue:
         return None
+    
+    # Try to match a 4-digit year first for efficiency
+    match = re.fullmatch(r"\d{4}", strvalue)
+    if match:
+        return int(strvalue)
+    
+    try:
+        return parser.parse(strvalue, fuzzy=True).year
+    except (ValueError, OverflowError, TypeError):
+        return None
+
+
+def get_total_chunks(csv_path, chunksize):
+    try:
+        with open(csv_path, "rb") as f:
+            total_rows = sum(1 for _ in f) - 1  # subtract header row
+        return math.ceil(total_rows / chunksize)
+    except Exception as e:
+        print(f"Error occurred while getting total chunks: {e}")
+        return 0
