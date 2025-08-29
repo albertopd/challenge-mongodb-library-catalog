@@ -2,7 +2,7 @@ import pandas as pd
 from app.utils.parse_helpers import parse_dict, parse_list, parse_year
 
 
-def _drop_unnecessary_columns(chunk: pd.DataFrame) -> pd.DataFrame:
+def __drop_unnecessary_columns(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Removes unnecessary columns from the given DataFrame chunk.
 
@@ -23,7 +23,7 @@ def _drop_unnecessary_columns(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk.drop(columns=[c for c in drop_cols if c in chunk.columns])
 
 
-def _transform_dict_columns(chunk: pd.DataFrame) -> pd.DataFrame:
+def __transform_dict_columns(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Transforms specified columns in a DataFrame by applying the `parse_dict` function.
 
@@ -43,7 +43,7 @@ def _transform_dict_columns(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk
 
 
-def _transform_ratings_by_stars(chunk: pd.DataFrame) -> pd.DataFrame:
+def __transform_ratings_by_stars(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Transforms the 'ratingsByStars' column in the given DataFrame chunk.
 
@@ -65,7 +65,7 @@ def _transform_ratings_by_stars(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk
 
 
-def _transform_authors(chunk: pd.DataFrame) -> pd.DataFrame:
+def __transform_authors(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Transforms the 'author' column in the given DataFrame chunk by cleaning and parsing author names.
 
@@ -92,7 +92,7 @@ def _transform_authors(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk
 
 
-def _transform_publish_year(chunk: pd.DataFrame) -> pd.DataFrame:
+def __transform_publish_year(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Extracts the publication year from the 'publishDate' column and adds it as a new 'publishYear' column.
 
@@ -125,11 +125,11 @@ def transform_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: The transformed DataFrame chunk.
     """
     for func in [
-        _drop_unnecessary_columns,
-        _transform_dict_columns,
-        _transform_ratings_by_stars,
-        _transform_authors,
-        _transform_publish_year,
+        __drop_unnecessary_columns,
+        __transform_dict_columns,
+        __transform_ratings_by_stars,
+        __transform_authors,
+        __transform_publish_year,
     ]:
         chunk = func(chunk)
     return chunk
