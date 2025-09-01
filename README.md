@@ -20,7 +20,7 @@ This project is a MongoDB-powered library catalog system built with Python. It a
 ## 📂 Project Structure
 
 ```
-challenge-mongodb-library-catalog/
+mongodb-library-catalog/
 ├── app/                            # Application source code
 │   ├── db/                         # Database logic and catalog operations
 │   │   └── library_catalog.py      # MongoDB catalog implementation
@@ -53,8 +53,8 @@ challenge-mongodb-library-catalog/
 
 1. Clone this repository:
 	```sh
-	git clone https://github.com/albertopd/challenge-mongodb-library-catalog.git
-	cd challenge-mongodb-library-catalog
+	git clone https://github.com/albertopd/mongodb-library-catalog.git
+	cd mongodb-library-catalog
 	```
 2. Install dependencies:
 	```sh
